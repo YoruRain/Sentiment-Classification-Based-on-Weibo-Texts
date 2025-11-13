@@ -53,14 +53,14 @@ def load_vocab(file_path: str) -> Vocab:
     return Vocab(tokens)
 
 
-def load_data(file_path: str, sep: str, is_segmented=False, is_vectorized=False) -> DataFrame:
+def load_data(file_path: str, sep='', is_segmented=False, is_indexed=False) -> DataFrame:
     data = []
     with open(file_path, 'r', encoding='utf-8-sig') as f:
         for line in f:
             X, y = line.rsplit(':', 1)
             if is_segmented:
                 X = [token.strip() for token in X.split(sep)]
-            elif is_vectorized:
+            elif is_indexed:
                 X = list(map(int, X.split(sep)))
             y = int(float(y))
             data.append((X, y))
