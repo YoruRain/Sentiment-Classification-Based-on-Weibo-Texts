@@ -1,5 +1,9 @@
 from collections import defaultdict
+from datetime import datetime
 from tqdm.auto import tqdm
+import copy
+import json
+import os
 
 import pandas as pd
 from pandas import DataFrame
@@ -81,7 +85,7 @@ def load_data(file_path: str, sep='', is_segmented=False, is_indexed=False) -> D
 
 
 # 通用训练、验证和测试框架
-def train_model_with_validation(
+def train_model_with_validation(  #@save
         model, 
         train_loader, 
         val_loader, 
@@ -89,10 +93,12 @@ def train_model_with_validation(
         criterion=nn.CrossEntropyLoss(), 
         num_epochs=10, 
         device=torch.device('cuda'), 
-        target_names=['Negative', 'Neutral', 'Positive']
+        target_names=['Negative', 'Neutral', 'Positive'],
+        patience=3,
+        min_delta=0.001
         ):
     """
-    通用的模型训练函数，支持验证集评估
+    通用的模型训练函数，支持验证集评估和早停机制
     
     Args:
         model: PyTorch模型
@@ -103,6 +109,8 @@ def train_model_with_validation(
         num_epochs: 训练轮数
         device: 设备 (cpu/cuda)
         target_names: 类别名称列表
+        patience: 早停耐心值，验证损失不下降的最大轮数
+        min_delta: 最小改善阈值，小于此值视为没有改善
         
     Returns:
         dict: 包含训练历史的字典
@@ -118,6 +126,12 @@ def train_model_with_validation(
         'val_precision_scores': [],
         'val_recall_scores': []
     }
+    
+    # 早停相关变量
+    if patience is not None and val_loader is not None:
+        best_val_loss = float('inf')
+        patience_counter = 0
+        best_model_state = None
     
     for epoch in range(num_epochs):
         # 训练阶段
@@ -171,6 +185,24 @@ def train_model_with_validation(
             print(f"    Train Loss: {avg_train_loss:.4f}\tTrain Accuracy: {train_acc:.4f}")
             print(f"    Valid Loss: {val_metrics['loss']:.4f}\tValid Accuracy: {val_metrics['accuracy']:.4f}")
             print(f"    Valid Precision: {val_metrics['precision']:.4f}\tValid Recall: {val_metrics['recall']:.4f}\tValid F1: {val_metrics['f1']:.4f}")
+            
+            # 早停检查
+            if patience is not None:
+                current_val_loss = val_metrics['loss']
+                if current_val_loss < best_val_loss - min_delta:
+                    best_val_loss = current_val_loss
+                    patience_counter = 0
+                    best_model_state = copy.deepcopy(model.state_dict())
+                    print(f"    ✓ New best validation loss: {best_val_loss:.4f}")
+                else:
+                    patience_counter += 1
+                    print(f"    No improvement. Patience: {patience_counter}/{patience}")
+                    
+                if patience_counter >= patience:
+                    print(f"    Early stopping triggered! Best validation loss: {best_val_loss:.4f}")
+                    model.load_state_dict(best_model_state)
+                    break
+            
             print('-' * 80)
             
             # 最后一个epoch打印详细报告
@@ -180,6 +212,12 @@ def train_model_with_validation(
                                           target_names=target_names, digits=4))
         else:
             print(f"Epoch {epoch+1}/{num_epochs} - Loss: {avg_train_loss:.4f} - Accuracy: {train_acc:.4f}")
+    
+    # 添加早停信息到历史记录
+    if patience is not None and val_loader is not None:
+        history['early_stopped'] = patience_counter >= patience
+        history['best_val_loss'] = best_val_loss
+        history['stopped_epoch'] = epoch + 1 if patience_counter >= patience else num_epochs
     
     return history
 
@@ -349,6 +387,210 @@ def test_model_comprehensive(
         }
     }
 
+
+def convert_numpy_to_python(obj):  
+    """
+    递归地将NumPy数组和其他不可JSON序列化的对象转换为Python原生类型
+    """
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, dict):
+        return {key: convert_numpy_to_python(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_to_python(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(convert_numpy_to_python(item) for item in obj)
+    else:
+        return obj
+
+def save_training_results(  
+    model, 
+    model_name, 
+    actual_epochs, 
+    device, 
+    use_pretrained_embeddings, 
+    training_history, 
+    test_results, 
+    save_path="model_training_results.json"
+):
+    """
+    保存模型训练结果到JSON文件
+    
+    Args:
+        model: PyTorch模型实例
+        model_name: 模型名称字符串
+        actual_epochs: 实际训练的迭代次数
+        device: 训练设备 (torch.device 或字符串)
+        use_pretrained_embeddings: 是否使用预训练词向量 (布尔值)
+        training_history: 训练历史字典 (包含losses, accuracies等)
+        test_results: 测试结果字典 (包含accuracy, f1等指标)
+        save_path: JSON文件保存路径
+    
+    Returns:
+        dict: 保存的记录字典
+    """
+    
+    # 深拷贝并转换数据类型
+    training_history_cleaned = convert_numpy_to_python(copy.deepcopy(training_history))
+    training_history_cleaned = {k: v for k, v in training_history_cleaned.items() if k not in ["val_f1_scores", "val_precision_scores", "val_recall_scores"]}
+      # 移除空条目
+    test_results_cleaned = convert_numpy_to_python(copy.deepcopy(test_results))
+    test_results_cleaned = {k: v for k, v in test_results_cleaned.items() if k != "class_metrics"}  # 移除空条目
+    
+    # 提取模型结构信息
+    model_structure = [str(module) for module in model.children()]  # 获取模型的字符串表示
+    
+    # 获取模型的详细配置信息
+    model_config = {
+        "total_parameters": sum(p.numel() for p in model.parameters()),
+        "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
+        "model_structure": model_structure,
+    }
+    
+    # 创建当前训练记录
+    current_record = {
+        "model_class": model.__class__.__name__,
+        "model_name": model_name,
+        "actual_epochs": actual_epochs,
+        "device": str(device),
+        "use_pretrained_embeddings": use_pretrained_embeddings,
+        "training_history": training_history_cleaned,
+        "test_results": test_results_cleaned,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "model_config": model_config
+    }
+    
+    # 读取现有的JSON文件或创建新的记录列表
+    if os.path.exists(save_path):
+        try:
+            with open(save_path, 'r', encoding='utf-8') as f:
+                existing_records = json.load(f)
+                
+            # 确保现有数据是列表格式
+            if not isinstance(existing_records, list):
+                existing_records = [existing_records] if existing_records else []
+                
+        except (json.JSONDecodeError, FileNotFoundError):
+            print(f"警告: 无法读取现有文件 {save_path}，创建新文件")
+            existing_records = []
+    else:
+        existing_records = []
+    
+    # 添加当前记录
+    existing_records.append(current_record)
+    
+    # 保存更新后的记录列表
+    try:
+        with open(save_path, 'w', encoding='utf-8') as f:
+            json.dump(existing_records, f, ensure_ascii=False, indent=2)
+        
+        print(f"✓ 训练结果已保存到 {save_path}")
+        print(f"  - 模型: {model_name} ({model.__class__.__name__})")
+        print(f"  - 实际训练轮数: {actual_epochs}")
+        print(f"  - 测试准确率: {test_results.get('accuracy', 'N/A'):.4f}")
+        print(f"  - 测试F1分数: {test_results.get('f1', 'N/A'):.4f}")
+        print(f"  - 记录时间: {current_record['timestamp']}")
+        print(f"  - 总记录数: {len(existing_records)}")
+        
+    except Exception as e:
+        print(f"错误: 保存文件时出现问题: {e}")
+        return None
+    
+    return current_record
+
+def load_training_results(save_path="model_training_results.json"):  
+    """
+    加载训练结果记录
+    
+    Args:
+        save_path: JSON文件路径
+    
+    Returns:
+        list: 训练结果记录列表
+    """
+    if not os.path.exists(save_path):
+        print(f"文件 {save_path} 不存在")
+        return []
+    
+    try:
+        with open(save_path, 'r', encoding='utf-8') as f:
+            records = json.load(f)
+        
+        if not isinstance(records, list):
+            records = [records] if records else []
+            
+        print(f"✓ 成功加载 {len(records)} 条训练记录")
+        return records
+        
+    except json.JSONDecodeError as e:
+        print(f"错误: JSON文件格式错误: {e}")
+        return []
+    except Exception as e:
+        print(f"错误: 加载文件时出现问题: {e}")
+        return []
+
+def analyze_training_records(save_path="model_training_results.json", show_details=True):  
+    """
+    分析训练记录，提供模型性能对比
+    
+    Args:
+        save_path: JSON文件路径
+        show_details: 是否显示详细信息
+    
+    Returns:
+        pandas.DataFrame: 分析结果表格
+    """
+    records = load_training_results(save_path)
+    
+    if not records:
+        print("没有找到训练记录")
+        return None
+    
+    # 提取关键信息
+    analysis_data = []
+    for i, record in enumerate(records):
+        data = {
+            'Index': i,
+            'Model_Class': record.get('model_class', 'Unknown'),
+            'Model_Name': record.get('model_name', 'Unknown'),
+            'Epochs': record.get('actual_epochs', 0),
+            'Device': record.get('device', 'Unknown'),
+            'Pretrained_Embeddings': record.get('use_pretrained_embeddings', False),
+            'Test_Accuracy': record.get('test_results', {}).get('accuracy', 0),
+            'Test_F1': record.get('test_results', {}).get('f1', 0),
+            'Test_Precision': record.get('test_results', {}).get('precision', 0),
+            'Test_Recall': record.get('test_results', {}).get('recall', 0),
+            'Total_Parameters': record.get('model_config', {}).get('total_parameters', 0),
+            'Timestamp': record.get('timestamp', 'Unknown')
+        }
+        analysis_data.append(data)
+    
+    # 创建DataFrame
+    df = pd.DataFrame(analysis_data)
+    
+    if show_details:
+        print("\n" + "="*100)
+        print("训练记录分析")
+        print("="*100)
+        
+        # 显示总体统计
+        print(f"总训练记录数: {len(records)}")
+        print(f"涉及模型类别: {df['Model_Class'].nunique()}")
+        print(f"最佳F1分数: {df['Test_F1'].max():.4f} ({df.loc[df['Test_F1'].idxmax(), 'Model_Name']})")
+        print(f"最佳准确率: {df['Test_Accuracy'].max():.4f} ({df.loc[df['Test_Accuracy'].idxmax(), 'Model_Name']})")
+        
+        # 显示详细表格
+        print("\n详细训练记录:")
+        display_columns = ['Index', 'Model_Name', 'Epochs', 'Test_Accuracy', 'Test_F1', 'Timestamp']
+        print(df[display_columns].round(4).to_string(index=False))
+    
+    return df
+
+
 def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names):
     """绘制规范化混淆矩阵"""
     plt.figure(figsize=(8, 6))
@@ -385,7 +627,8 @@ def plot_training_curves(model_name, history, save_path=None):
     plt.title(f'Training Loss & Accuracy - {model_name}')
     # plt.legend(loc='upper right')
     plt.grid(True, alpha=0.3)
-    plt.ylim(0, 1.1)
+    plt.xlim(1, 10)
+    plt.ylim(0, 1.0)
     
     # 设置x轴刻度为整数
     plt.xticks(epochs_range)
@@ -399,6 +642,7 @@ def plot_training_curves(model_name, history, save_path=None):
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy Difference')
         plt.title(f'Overfitting Monitor - {model_name}')
+        plt.xlim(1, 10)
         plt.ylim(-0.2, 0.5)
         plt.legend()
         plt.grid(True, alpha=0.3)
@@ -463,16 +707,15 @@ def collate_fn_mlp(batch):
 
 class MLP(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, num_class, 
-                 pretrained_embedding_matrix=None):
+                 pretrained_embedding_matrix=None, freeze=True):
         super(MLP, self).__init__()
-        # EmbeddingBag 层
-        self.embeddingbag = nn.EmbeddingBag(vocab_size, embedding_dim)
 
-        # 词向量层：使用 EmbeddingBag
+        # EmbeddingBag 层
         if pretrained_embedding_matrix is not None:
-            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding_matrix, freeze=False)
+            self.embeddingbag = nn.EmbeddingBag.from_pretrained(pretrained_embedding_matrix, freeze=freeze, mode="mean")
         else:
-            self.embedding = nn.Embedding(vocab_size, embedding_dim)
+            self.embeddingbag = nn.EmbeddingBag(vocab_size, embedding_dim)
+
 
         # 线性变换：词向量层 -> 隐含层
         self.linear1 = nn.Linear(embedding_dim, hidden_dim)
@@ -482,18 +725,16 @@ class MLP(nn.Module):
 
         # 线性变换：激活层 -> 输出层
         self.linear2 = nn.Linear(hidden_dim, num_class)
-        # self.dropout = nn.Dropout(dropout)
+
+        self.dropout = nn.Dropout(0.5)
     
     def forward(self, inputs, offsets):
-        # embeddings = self.embedding(inputs)  # (batch_size, seq_length, embed_size)
-        # embedding = embeddings.mean(dim=1)  # (batch_size, embed_size)
         embedding = self.embeddingbag(inputs, offsets)
-        hidden = self.activate(self.linear1(embedding))  # (batch_size, hidden_size)
-        outputs = self.linear2(hidden)  # (batch_size, output_size)
-
-        # 获得每个序列属于某个类别概率的对数值
-        # probs = F.log_softmax(outputs, dim=1)
+        hidden = self.activate(self.linear1(embedding))
+        hidden = self.dropout(hidden)
+        outputs = self.linear2(hidden)
         return outputs
+
     
 
 def collate_fn_cnn(batch):
@@ -506,13 +747,14 @@ def collate_fn_cnn(batch):
 
 class CNN(nn.Module):
     def __init__(self, vocab_size, embedding_dim, filter_size, num_filter, num_class,
-                 pretrained_embedding_matrix=None) -> None:
+                 pretrained_embedding_matrix=None, freeze=True) -> None:
         super(CNN, self).__init__()
         if pretrained_embedding_matrix is not None:
-            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding_matrix, freeze=False)
+            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding_matrix, freeze=freeze)
         else:
             self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.conv1d = nn.Conv1d(embedding_dim, num_filter, filter_size, padding=1)  # padding=1 表示在卷积操作之前，将序列的前后各补充1个输入
+        self.dropout = nn.Dropout(0.5)
         self.activate = F.relu
         self.linear = nn.Linear(num_filter, num_class)
 
@@ -520,6 +762,7 @@ class CNN(nn.Module):
     def forward(self, inputs):
         embedding = self.embedding(inputs)
         convolution = self.activate(self.conv1d(embedding.permute(0, 2, 1)))
+        convolution = self.dropout(convolution)
         pooling = F.max_pool1d(convolution, kernel_size=convolution.shape[2])
         outputs = self.linear(pooling.squeeze(dim=2))
         return outputs
@@ -538,13 +781,16 @@ def collate_fn_lstm(batch):
 
 class LSTM(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, num_class, 
-                 pretrained_embedding_matrix=None):
+                 pretrained_embedding_matrix=None, freeze=True):
         super(LSTM, self).__init__()
         if pretrained_embedding_matrix is not None:
-            self.embeddings = nn.Embedding.from_pretrained(pretrained_embedding_matrix, freeze=False)
+            self.embeddings = nn.Embedding.from_pretrained(pretrained_embedding_matrix, freeze=freeze)
         else:
             self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, dropout=0.3, num_layers=2)
+
+        self.dropout = nn.Dropout(0.5)
+        
         self.output = nn.Linear(hidden_dim, num_class)
 
     def forward(self, inputs, lengths):
@@ -553,8 +799,9 @@ class LSTM(nn.Module):
         # 使用 pack_padded_sequence 函数对嵌入序列进行打包
         x_pack = pack_padded_sequence(embedding, lengths, batch_first=True, enforce_sorted=False)
         hidden, (hn, cn) = self.lstm(x_pack)
-        outputs = self.output(hn[-1])
-        return outputs
+        output = self.dropout(hn[-1])
+        output = self.output(output)
+        return output
 
 
 def length_to_mask(lengths):
@@ -592,12 +839,13 @@ class Transformer(nn.Module):
             dropout=0.1, 
             max_len=128, 
             activation: str = "relu", 
-            pretrained_embedding_matrix=None
+            pretrained_embedding_matrix=None, 
+            freeze=True
             ):
         super(Transformer, self).__init__()
         self.embedding_dim = embedding_dim
         if pretrained_embedding_matrix is not None:
-            self.embeddings = nn.Embedding.from_pretrained(pretrained_embedding_matrix, freeze=False)
+            self.embeddings = nn.Embedding.from_pretrained(pretrained_embedding_matrix, freeze=freeze)
         else:
             self.embeddings = nn.Embedding(vocab_size, embedding_dim)
         self.position_embedding = PositionalEncoding(embedding_dim, dropout, max_len)  # 位置编码
