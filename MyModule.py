@@ -70,21 +70,71 @@ def load_vocab(file_path: str) -> Vocab:
     return Vocab(tokens)
 
 
-def load_data(file_path: str, sep='', is_segmented=False, is_indexed=False) -> DataFrame:
+def load_data(file_path: str, sep='', is_segmented=False, is_tokenized=False) -> DataFrame:
     data = []
     with open(file_path, 'r', encoding='utf-8-sig') as f:
         for line in f:
             X, y = line.rsplit(':', 1)
             if is_segmented:
                 X = [token.strip() for token in X.split(sep)]
-            elif is_indexed:
+            elif is_tokenized:
                 X = list(map(int, X.split(sep)))
             y = int(float(y))
             data.append((X, y))
-    return DataFrame(data, columns=[0, 1])
+    return DataFrame(data, columns=["text", "label"])
+
+def segment_data(X, y, file_path='', batch_size=500):  #@save
+    """
+    分批处理数据以避免内存不足问题
+    batch_size: 每批处理的数据量，默认1000条
+    """
+    if os.path.exists(file_path):
+        print(f"文件 {file_path} 已存在，直接读取。")
+        return load_data(file_path, sep='<sp>', is_segmented=True)
+    if not isinstance(X, list):
+        X = X.tolist()
+    if not isinstance(y, list):
+        y = y.tolist()
+    
+    from ltp import LTP
+    ltp = LTP()
+
+    segmented_data = []
+    
+    print(f"开始处理 {len(X)} 条数据，批大小: {batch_size}")
+    
+    if len(file_path) > 0:
+        # 打开文件准备写入
+        with open(file_path, 'w', encoding='utf-8') as f:
+            # 分批处理
+            for i in range(0, len(X), batch_size):
+                batch_end = min(i + batch_size, len(X))
+                batch_X = X[i:batch_end]
+                batch_y = y[i:batch_end]
+                
+                print(f"正在处理第 {i//batch_size + 1} 批，数据范围: {i}-{batch_end-1}")
+                
+                # 对当前批次进行分词
+                segment = ltp.pipeline(batch_X, tasks=['cws'], return_dict=False)[0]
+                
+                # 写入文件
+                for sublist, label in zip(segment, batch_y):
+                    segmented_data.append((sublist, label))
+                    f.write('<sp>'.join(sublist) + ':' + str(label) + '\n')
+                
+                print(f"第 {i//batch_size + 1} 批处理完成")
+    
+    print("所有数据处理完成！")
+    return DataFrame(segmented_data, columns=["text", "label"])
 
 
-# 通用训练、验证和测试框架
+def class_weights(train_data: DataFrame):  #@save
+    """计算类别权重，用于损失函数中的加权"""
+    label_counts = train_data["label"].value_counts().values
+    class_counts = torch.tensor(label_counts, dtype=torch.float)
+    weights = torch.sum(class_counts) / (len(class_counts) * class_counts)
+    return weights
+
 def train_model_with_validation(  #@save
         model, 
         train_loader, 
@@ -407,9 +457,10 @@ def convert_numpy_to_python(obj):
     else:
         return obj
 
-def save_training_results(  
+def save_training_results(
     model, 
     model_name, 
+    set_epochs,
     actual_epochs, 
     device, 
     use_pretrained_embeddings, 
@@ -430,8 +481,6 @@ def save_training_results(
         test_results: 测试结果字典 (包含accuracy, f1等指标)
         save_path: JSON文件保存路径
     
-    Returns:
-        dict: 保存的记录字典
     """
     
     # 深拷贝并转换数据类型
@@ -453,15 +502,16 @@ def save_training_results(
     
     # 创建当前训练记录
     current_record = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "model_class": model.__class__.__name__,
         "model_name": model_name,
+        "model_config": model_config, 
+        "set_epochs": set_epochs, 
         "actual_epochs": actual_epochs,
         "device": str(device),
         "use_pretrained_embeddings": use_pretrained_embeddings,
         "training_history": training_history_cleaned,
         "test_results": test_results_cleaned,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "model_config": model_config
     }
     
     # 读取现有的JSON文件或创建新的记录列表
@@ -500,7 +550,7 @@ def save_training_results(
         print(f"错误: 保存文件时出现问题: {e}")
         return None
     
-    return current_record
+    # return current_record
 
 def load_training_results(save_path="model_training_results.json"):  
     """
@@ -591,7 +641,7 @@ def analyze_training_records(save_path="model_training_results.json", show_detai
     return df
 
 
-def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names):
+def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names, save_path="results/pics/confusion_matrix"):  #@save
     """绘制规范化混淆矩阵"""
     plt.figure(figsize=(8, 6))
     
@@ -606,9 +656,13 @@ def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names):
     plt.ylabel('True Label', fontsize=12)
     
     plt.tight_layout()
+    if save_path:
+        time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        pic_name = f"{time}_{model_name.replace(' ', '_').lower()}.png"
+        plt.savefig(os.path.join(save_path, pic_name), dpi=300, bbox_inches='tight')
     plt.show()
 
-def plot_training_curves(model_name, history, save_path=None):
+def plot_training_curves(model_name, history, save_path="results/pics/training_curves"):  #@save
     """绘制训练曲线"""
     num_epochs = len(history['train_losses'])
     
@@ -625,7 +679,7 @@ def plot_training_curves(model_name, history, save_path=None):
     plt.xlabel('Epoch')
     plt.ylabel('Value')
     plt.title(f'Training Loss & Accuracy - {model_name}')
-    # plt.legend(loc='upper right')
+    plt.legend(loc='upper right')
     plt.grid(True, alpha=0.3)
     plt.xlim(1, 10)
     plt.ylim(0, 1.0)
@@ -653,7 +707,9 @@ def plot_training_curves(model_name, history, save_path=None):
     
     plt.tight_layout()
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        pic_name = f"{time}_{model_name.replace(' ', '_').lower()}.png"
+        plt.savefig(os.path.join(save_path, pic_name), dpi=300, bbox_inches='tight')
     plt.show()
 
 def print_training_summary(model_name, history):
@@ -688,10 +744,10 @@ def collate_fn_mlp(batch):
     # 从独立样本集合中构建各批次的输入输出
     # 其中 BowDataset 类定义了一个样本的数据结构，即输入标签和输出标签的元组
     # 因此，将输入 inputs 定义为一个张量的列表，其中每个张量为原始句子中词元序列对应的索引值序列
-    inputs = [torch.tensor(b[0]) for b in batch]
+    inputs = [torch.tensor(b["text"]) for b in batch]
 
     # 输出的目标 targets 为该批次中由全部样例输出结果构成的张量
-    targets = torch.tensor([b[1] for b in batch], dtype=torch.long)
+    targets = torch.tensor([b["label"] for b in batch], dtype=torch.long)
 
     # 获取一个批次中每个样例的序列长度
     offsets = [0] + [i.shape[0] for i in inputs]
@@ -738,8 +794,8 @@ class MLP(nn.Module):
     
 
 def collate_fn_cnn(batch):
-    inputs = [torch.tensor(b[0]) for b in batch]
-    targets = torch.tensor([b[1] for b in batch], dtype=torch.long)
+    inputs = [torch.tensor(b["text"]) for b in batch]
+    targets = torch.tensor([b["label"] for b in batch], dtype=torch.long)
 
     # 对批次内的样本补齐，使其具有相同的长度
     inputs = pad_sequence(inputs, batch_first=True)
@@ -769,9 +825,9 @@ class CNN(nn.Module):
     
 
 def collate_fn_lstm(batch):
-    lengths = torch.tensor([len(b[0]) for b in batch], dtype=torch.long)
-    inputs = [torch.tensor(b[0]) for b in batch]
-    targets = torch.tensor([b[1] for b in batch], dtype=torch.long)
+    lengths = torch.tensor([len(b["text"]) for b in batch], dtype=torch.long)
+    inputs = [torch.tensor(b["text"]) for b in batch]
+    targets = torch.tensor([b["label"] for b in batch], dtype=torch.long)
 
     # 使用 pad_sequence 函数对输入序列进行填充
     inputs = pad_sequence(inputs, batch_first=True)
