@@ -466,7 +466,7 @@ def save_training_results(
     use_pretrained_embeddings, 
     training_history, 
     test_results, 
-    save_path="model_training_results.json"
+    save_path="results/model_training_results.json"
 ):
     """
     保存模型训练结果到JSON文件
@@ -551,94 +551,6 @@ def save_training_results(
         return None
     
     # return current_record
-
-def load_training_results(save_path="model_training_results.json"):  
-    """
-    加载训练结果记录
-    
-    Args:
-        save_path: JSON文件路径
-    
-    Returns:
-        list: 训练结果记录列表
-    """
-    if not os.path.exists(save_path):
-        print(f"文件 {save_path} 不存在")
-        return []
-    
-    try:
-        with open(save_path, 'r', encoding='utf-8') as f:
-            records = json.load(f)
-        
-        if not isinstance(records, list):
-            records = [records] if records else []
-            
-        print(f"✓ 成功加载 {len(records)} 条训练记录")
-        return records
-        
-    except json.JSONDecodeError as e:
-        print(f"错误: JSON文件格式错误: {e}")
-        return []
-    except Exception as e:
-        print(f"错误: 加载文件时出现问题: {e}")
-        return []
-
-def analyze_training_records(save_path="model_training_results.json", show_details=True):  
-    """
-    分析训练记录，提供模型性能对比
-    
-    Args:
-        save_path: JSON文件路径
-        show_details: 是否显示详细信息
-    
-    Returns:
-        pandas.DataFrame: 分析结果表格
-    """
-    records = load_training_results(save_path)
-    
-    if not records:
-        print("没有找到训练记录")
-        return None
-    
-    # 提取关键信息
-    analysis_data = []
-    for i, record in enumerate(records):
-        data = {
-            'Index': i,
-            'Model_Class': record.get('model_class', 'Unknown'),
-            'Model_Name': record.get('model_name', 'Unknown'),
-            'Epochs': record.get('actual_epochs', 0),
-            'Device': record.get('device', 'Unknown'),
-            'Pretrained_Embeddings': record.get('use_pretrained_embeddings', False),
-            'Test_Accuracy': record.get('test_results', {}).get('accuracy', 0),
-            'Test_F1': record.get('test_results', {}).get('f1', 0),
-            'Test_Precision': record.get('test_results', {}).get('precision', 0),
-            'Test_Recall': record.get('test_results', {}).get('recall', 0),
-            'Total_Parameters': record.get('model_config', {}).get('total_parameters', 0),
-            'Timestamp': record.get('timestamp', 'Unknown')
-        }
-        analysis_data.append(data)
-    
-    # 创建DataFrame
-    df = pd.DataFrame(analysis_data)
-    
-    if show_details:
-        print("\n" + "="*100)
-        print("训练记录分析")
-        print("="*100)
-        
-        # 显示总体统计
-        print(f"总训练记录数: {len(records)}")
-        print(f"涉及模型类别: {df['Model_Class'].nunique()}")
-        print(f"最佳F1分数: {df['Test_F1'].max():.4f} ({df.loc[df['Test_F1'].idxmax(), 'Model_Name']})")
-        print(f"最佳准确率: {df['Test_Accuracy'].max():.4f} ({df.loc[df['Test_Accuracy'].idxmax(), 'Model_Name']})")
-        
-        # 显示详细表格
-        print("\n详细训练记录:")
-        display_columns = ['Index', 'Model_Name', 'Epochs', 'Test_Accuracy', 'Test_F1', 'Timestamp']
-        print(df[display_columns].round(4).to_string(index=False))
-    
-    return df
 
 
 def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names, save_path="results/pics/confusion_matrix"):  #@save
