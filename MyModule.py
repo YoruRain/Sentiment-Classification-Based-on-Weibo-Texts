@@ -860,15 +860,16 @@ class LSTM(nn.Module):
         return output
 
 
-def length_to_mask(lengths):
+def length_to_mask(lengths):  #@save
     max_len = torch.max(lengths)
     mask = torch.arange(max_len, device=lengths.device).expand(lengths.shape[0], max_len) < lengths.unsqueeze(1)
     return mask
 
-
-class PositionalEncoding(nn.Module):
+class PositionalEncoding(nn.Module):  #@save
     def __init__(self, d_model, dropout=0.1, max_len=512):
         super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+        self.d_model = d_model
 
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
@@ -877,13 +878,28 @@ class PositionalEncoding(nn.Module):
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0).transpose(0, 1)
         self.register_buffer('pe', pe)
+        self.max_len = max_len
 
     def forward(self, x):
-        x = x + self.pe[:x.size(0), :]
-        return x
+        # 如果输入序列长度超过预计算的位置编码长度，动态扩展位置编码
+        seq_len = x.size(0)
+        if seq_len > self.max_len:
+            # 动态生成更长的位置编码
+            pe_extended = torch.zeros(seq_len, self.d_model, device=x.device)
+            position = torch.arange(0, seq_len, dtype=torch.float, device=x.device).unsqueeze(1)
+            div_term = torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float, device=x.device) * 
+                                (-math.log(10000.0)) / self.d_model)
+            pe_extended[:, 0::2] = torch.sin(position * div_term)
+            pe_extended[:, 1::2] = torch.cos(position * div_term)
+            pe_extended = pe_extended.unsqueeze(0).transpose(0, 1)
+            x = x + pe_extended[:seq_len, :]
+        else:
+            x = x + self.pe[:seq_len, :]
+        
+        return self.dropout(x)
     
 
-class Transformer(nn.Module):
+class Transformer(nn.Module):  #@save
     def __init__(
             self, 
             vocab_size, 
@@ -893,7 +909,7 @@ class Transformer(nn.Module):
             num_head=2, 
             num_layers=2, 
             dropout=0.1, 
-            max_len=128, 
+            max_len=512, 
             activation: str = "relu", 
             pretrained_embedding_matrix=None, 
             freeze=True
@@ -924,7 +940,7 @@ class Transformer(nn.Module):
         hidden_states = self.transformer(hidden_states, src_key_padding_mask=attention_mask)
         hidden_states = hidden_states[0, :, :]
 
-        # 去第一个词元的输出结果作为分类层的输入
+        # 取第一个词元的输出结果作为分类层的输入
         outputs = self.output(hidden_states)
         return outputs
 
