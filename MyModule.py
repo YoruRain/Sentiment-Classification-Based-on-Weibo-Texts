@@ -70,14 +70,14 @@ def load_vocab(file_path: str) -> Vocab:
     return Vocab(tokens)
 
 
-def load_data(file_path: str, sep='', is_segmented=False, is_tokenized=False) -> DataFrame:
+def load_data(file_path: str, sep='', is_segmented=False, is_indexed=False) -> DataFrame:
     data = []
     with open(file_path, 'r', encoding='utf-8-sig') as f:
         for line in f:
             X, y = line.rsplit(':', 1)
             if is_segmented:
                 X = [token.strip() for token in X.split(sep)]
-            elif is_tokenized:
+            elif is_indexed:
                 X = list(map(int, X.split(sep)))
             y = int(float(y))
             data.append((X, y))
@@ -553,7 +553,7 @@ def save_training_results(
     # return current_record
 
 
-def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names, save_path="results/pics/confusion_matrix"):  #@save
+def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names, save_path="results/confusion_matrix"):  #@save
     """绘制规范化混淆矩阵"""
     plt.figure(figsize=(8, 6))
     
@@ -574,7 +574,7 @@ def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names, sa
         plt.savefig(os.path.join(save_path, pic_name), dpi=300, bbox_inches='tight')
     plt.show()
 
-def plot_training_curves(model_name, history, save_path="results/pics/training_curves"):  #@save
+def plot_training_curves(model_name, history, save_path="results/training_curves"):  #@save
     """绘制训练曲线"""
     num_epochs = len(history['train_losses'])
     
