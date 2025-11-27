@@ -8,12 +8,12 @@
 
 本项目实现了一个完整的中文文本情感分类系统，从数据预处理到模型训练，再到性能评估，涵盖了机器学习项目的完整流程。
 
-项目基于约36万条微博文本数据，实现了多种经典和现代的机器学习算法。
+项目基于约 36 万条微博文本数据，实现了多种经典和现代的机器学习算法。
 
 ### 主要特点
 
-- 🔍 **大规模数据集**：358,584条微博文本，经过LLM标注的高质量情感标签
-- 🤖 **多模型对比**：实现了5种不同的机器学习和深度学习模型
+- 🔍 **大规模数据集**：358,584 条微博文本，经过 LLM 标注的高质量情感标签
+- 🤖 **多模型对比**：实现了 5 种不同的机器学习和深度学习模型
 - 📈 **完整pipeline**：从数据清洗、特征工程到模型训练的完整流程
 - 🎯 **性能优化**：针对数据不平衡问题采用了多种优化策略
 - 📊 **详细分析**：包含丰富的数据分析和可视化结果
@@ -38,7 +38,7 @@
 │   └── final/                          # 最终处理数据
 │       └── vocab.txt                   # 词汇表
 ├── models/                             # 预训练模型
-│   ├── chinese-macbert-base/           # MacBERT模型
+│   ├── chinese-macbert-base/           # MacBERT 模型
 │   ├── opus-mt-en-zh/                  # 英中翻译模型
 │   └── opus-mt-zh-en/                  # 中英翻译模型
 ├── pics/                               # 图片资源
@@ -55,14 +55,14 @@
 
 ## 📈 数据集概况
 
-- **数据规模**：358,584条微博文本
+- **数据规模**：358,584 条微博文本
 - **数据来源**：新浪微博用户原创内容
 - **标注方式**：基于大语言模型(DeepSeek API)的自动标注
 - **类别分布**：
-  - 积极：167,778条 (46.8%)
-  - 消极：124,334条 (34.7%)
-  - 中立：66,472条 (18.5%)
-- **文本长度**：平均18.8字符，标准差11.1字符
+  - 积极：167,778 条 (46.8%)
+  - 消极：124,334 条 (34.7%)
+  - 中立：66,472 条 (18.5%)
+- **文本长度**：平均 18.8 字符，标准差 11.1 字符
 
 ## 🔧 环境配置
 
@@ -108,32 +108,32 @@ jupyter notebook "02Feature Engineering and Data Analysis.ipynb"
 ### 数据处理特色
 - **数据增强**：针对中立情感样本的回译增强
 - **类别平衡**：使用类别权重缓解数据不平衡
-- **分词优化**：基于LTP的中文分词处理
-- **词汇管理**：构建16,000+词汇的专用词典
+- **分词优化**：基于 LTP 的中文分词处理
+- **词汇管理**：构建 16,000+ 词汇的专用词典
 
 
 ## 🔬 技术亮点
 
 1. **多维度数据分析**：从文本长度、情感分布等多个维度分析数据特征
 2. **先进的数据增强**：使用回译技术平衡类别分布  
-3. **模型架构优化**：自实现的CNN、LSTM、Transformer架构
-4. **预训练模型微调**：基于MacBERT的中文情感分类优化
+3. **模型架构优化**：自实现的 CNN、LSTM、Transformer 架构
+4. **预训练模型微调**：基于 MacBERT 的中文情感分类优化
 5. **综合性能评估**：包含准确率、精确率、召回率、F1分数等多项指标
 
 ## 📝 Notebook说明
 
-- **[01Data Wrangling.ipynb](01Data Wrangling.ipynb)**：原始数据处理，从JSON格式提取文本和标签
-- **[02Feature Engineering and Data Analysis.ipynb](02Feature Engineering and Data Analysis.ipynb)**：特征工程，数据统计分析和可视化
-- **[03Data Augmentation.ipynb](03Data Augmentation.ipynb)**：数据增强，使用回译技术平衡数据分布
-- **[04Segmentation and Tokenization.ipynb](04Segmentation and Tokenization.ipynb)**：中文分词和词汇表构建
+- **[01Data Wrangling.ipynb](01Data%20Wrangling.ipynb)**：原始数据处理，从JSON格式提取文本和标签
+- **[02Feature Engineering and Data Analysis.ipynb](02Feature%20Engineering%20and%20Data%20Analysis.ipynb)**：特征工程，数据统计分析和可视化
+- **[03Data Augmentation.ipynb](03Data%20Augmentation.ipynb)**：数据增强，使用回译技术平衡数据分布
+- **[04Segmentation_and Tokenization.ipynb](04Segmentation_and%20Tokenization.ipynb)**：中文分词和词汇表构建
 - **[05Implement.ipynb](05Implement.ipynb)**：传统机器学习模型实现和训练
-- **[06Pre-trained Word Embeddings.ipynb](06Pre-trained Word Embeddings.ipynb)**：基于预训练词向量的深度学习模型
-- **[07Pre-trained Language Model.ipynb](07Pre-trained Language Model.ipynb)**：预训练语言模型微调
-- **[08Comparison and Analysis.ipynb](08Comparison and Analysis.ipynb)**：所有模型的对比分析和总结
+- **[06Pre-trained Word Embeddings.ipynb](06Pre-trained%20Word%20Embeddings.ipynb)**：基于预训练词向量的深度学习模型
+- **[07Pre-trained Language Model.ipynb](07Pre-trained%20Language%20Model.ipynb)**：预训练语言模型微调
+- **[08Comparison and Analysis.ipynb](08Comparison%20and%20Analysis.ipynb)**：所有模型的对比分析和总结
 
 ## 🤝 贡献指南
 
-欢迎提交Issue和Pull Request来改进项目！
+欢迎提交 Issue 和 Pull Request 来改进项目！
 
 ## 📄 许可证
 
@@ -145,4 +145,4 @@ jupyter notebook "02Feature Engineering and Data Analysis.ipynb"
 
 ---
 
-⭐ 如果这个项目对您有帮助，请给个Star支持一下（实际对0人有帮助）！
+⭐ 如果这个项目对您有帮助，请给个 Star 支持一下（实际对 $0$ 人有帮助）！
