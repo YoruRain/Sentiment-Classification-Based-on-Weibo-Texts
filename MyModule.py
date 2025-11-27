@@ -83,59 +83,16 @@ def load_data(file_path: str, sep='', is_segmented=False, is_indexed=False) -> D
             data.append((X, y))
     return DataFrame(data, columns=["text", "label"])
 
-def segment_data(X, y, file_path='', batch_size=500):  #@save
-    """
-    分批处理数据以避免内存不足问题
-    batch_size: 每批处理的数据量，默认1000条
-    """
-    if os.path.exists(file_path):
-        print(f"文件 {file_path} 已存在，直接读取。")
-        return load_data(file_path, sep='<sp>', is_segmented=True)
-    if not isinstance(X, list):
-        X = X.tolist()
-    if not isinstance(y, list):
-        y = y.tolist()
-    
-    from ltp import LTP
-    ltp = LTP()
 
-    segmented_data = []
-    
-    print(f"开始处理 {len(X)} 条数据，批大小: {batch_size}")
-    
-    if len(file_path) > 0:
-        # 打开文件准备写入
-        with open(file_path, 'w', encoding='utf-8') as f:
-            # 分批处理
-            for i in range(0, len(X), batch_size):
-                batch_end = min(i + batch_size, len(X))
-                batch_X = X[i:batch_end]
-                batch_y = y[i:batch_end]
-                
-                print(f"正在处理第 {i//batch_size + 1} 批，数据范围: {i}-{batch_end-1}")
-                
-                # 对当前批次进行分词
-                segment = ltp.pipeline(batch_X, tasks=['cws'], return_dict=False)[0]
-                
-                # 写入文件
-                for sublist, label in zip(segment, batch_y):
-                    segmented_data.append((sublist, label))
-                    f.write('<sp>'.join(sublist) + ':' + str(label) + '\n')
-                
-                print(f"第 {i//batch_size + 1} 批处理完成")
-    
-    print("所有数据处理完成！")
-    return DataFrame(segmented_data, columns=["text", "label"])
-
-
-def class_weights(train_data: DataFrame):  #@save
+def class_weights(train_data: DataFrame):
     """计算类别权重，用于损失函数中的加权"""
     label_counts = train_data["label"].value_counts().values
     class_counts = torch.tensor(label_counts, dtype=torch.float)
     weights = torch.sum(class_counts) / (len(class_counts) * class_counts)
     return weights
 
-def train_model_with_validation(  #@save
+
+def train_model_with_validation(
         model, 
         train_loader, 
         val_loader, 
@@ -553,7 +510,7 @@ def save_training_results(
     # return current_record
 
 
-def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names, save_path="results/confusion_matrix"):  #@save
+def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names, save_path="results/confusion_matrix"):  
     """绘制规范化混淆矩阵"""
     plt.figure(figsize=(8, 6))
     
@@ -574,7 +531,7 @@ def plot_confusion_matrix(model_name, true_labels, pred_labels, target_names, sa
         plt.savefig(os.path.join(save_path, pic_name), dpi=300, bbox_inches='tight')
     plt.show()
 
-def plot_training_curves(model_name, history, save_path="results/training_curves"):  #@save
+def plot_training_curves(model_name, history, save_path="results/training_curves"):  
     """绘制训练曲线"""
     num_epochs = len(history['train_losses'])
     
@@ -772,12 +729,12 @@ class LSTM(nn.Module):
         return output
 
 
-def length_to_mask(lengths):  #@save
+def length_to_mask(lengths):  
     max_len = torch.max(lengths)
     mask = torch.arange(max_len, device=lengths.device).expand(lengths.shape[0], max_len) < lengths.unsqueeze(1)
     return mask
 
-class PositionalEncoding(nn.Module):  #@save
+class PositionalEncoding(nn.Module):  
     def __init__(self, d_model, dropout=0.1, max_len=512):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
@@ -811,7 +768,7 @@ class PositionalEncoding(nn.Module):  #@save
         return self.dropout(x)
     
 
-class Transformer(nn.Module):  #@save
+class Transformer(nn.Module):  
     def __init__(
             self, 
             vocab_size, 
@@ -857,4 +814,3 @@ class Transformer(nn.Module):  #@save
         return outputs
 
 collate_fn_trans = collate_fn_lstm
-
