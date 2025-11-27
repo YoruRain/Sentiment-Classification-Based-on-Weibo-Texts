@@ -84,17 +84,6 @@ ltp>=4.1.0
 pip install -r requirements.txt
 ```
 
-## 📚 使用指南
-
-### 1. 数据预处理
-```bash
-# 运行数据整理
-jupyter notebook "01Data Wrangling.ipynb"
-
-# 特征工程与数据分析
-jupyter notebook "02Feature Engineering and Data Analysis.ipynb"
-```
-
 ## 🎯 主要功能模块
 
 ### MyModule.py 核心功能
@@ -125,7 +114,7 @@ jupyter notebook "02Feature Engineering and Data Analysis.ipynb"
 - **[01Data Wrangling.ipynb](01Data%20Wrangling.ipynb)**：原始数据处理，从JSON格式提取文本和标签
 - **[02Feature Engineering and Data Analysis.ipynb](02Feature%20Engineering%20and%20Data%20Analysis.ipynb)**：特征工程，数据统计分析和可视化
 - **[03Data Augmentation.ipynb](03Data%20Augmentation.ipynb)**：数据增强，使用回译技术平衡数据分布
-- **[04Segmentation_and Tokenization.ipynb](04Segmentation_and%20Tokenization.ipynb)**：中文分词和词汇表构建
+- **[04Segmentation and Tokenization.ipynb](04Segmentation_and%20Tokenization.ipynb)**：中文分词和词汇表构建
 - **[05Implement.ipynb](05Implement.ipynb)**：传统机器学习模型实现和训练
 - **[06Pre-trained Word Embeddings.ipynb](06Pre-trained%20Word%20Embeddings.ipynb)**：基于预训练词向量的深度学习模型
 - **[07Pre-trained Language Model.ipynb](07Pre-trained%20Language%20Model.ipynb)**：预训练语言模型微调
