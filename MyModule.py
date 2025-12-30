@@ -550,7 +550,7 @@ def plot_training_curves(model_name, history, save_path="results/training_curves
     plt.title(f'Training Loss & Accuracy - {model_name}')
     plt.legend(loc='upper right')
     plt.grid(True, alpha=0.3)
-    plt.xlim(1, 10)
+    plt.xlim(1, max(num_epochs, 10))
     plt.ylim(0, 1.0)
     
     # 设置x轴刻度为整数
@@ -565,7 +565,7 @@ def plot_training_curves(model_name, history, save_path="results/training_curves
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy Difference')
         plt.title(f'Overfitting Monitor - {model_name}')
-        plt.xlim(1, 10)
+        plt.xlim(1, max(num_epochs, 10))
         plt.ylim(-0.2, 0.5)
         plt.legend()
         plt.grid(True, alpha=0.3)
