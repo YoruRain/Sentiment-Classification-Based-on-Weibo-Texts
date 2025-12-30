@@ -6605,5 +6605,265 @@
       "recall": 0.7617888363711093,
       "f1": 0.7618011292863897
     }
+  },
+  {
+    "timestamp": "2025-12-29 09:37:51",
+    "model_class": "MLP",
+    "model_name": "MLP with Pretrained Embeddings",
+    "model_config": {
+      "total_parameters": 7367427,
+      "trainable_parameters": 7367427,
+      "model_structure": [
+        "EmbeddingBag(36576, 200, mode='mean')",
+        "Linear(in_features=200, out_features=256, bias=True)",
+        "Linear(in_features=256, out_features=3, bias=True)",
+        "Dropout(p=0.5, inplace=False)"
+      ]
+    },
+    "set_epochs": 10,
+    "actual_epochs": 5,
+    "device": "cuda",
+    "use_pretrained_embeddings": true,
+    "training_history": {
+      "train_losses": [
+        0.6437396880819294,
+        0.5363248725268238,
+        0.4853675898137466,
+        0.44509606683211617,
+        0.41250104342987615
+      ],
+      "train_accuracies": [
+        0.7245434566923001,
+        0.7780520593125353,
+        0.8014980512466265,
+        0.8200577684318885,
+        0.8344761730614899
+      ],
+      "val_losses": [
+        0.5917916303939357,
+        0.5781724415757177,
+        0.5849115274266479,
+        0.6075666167211122,
+        0.6332046250135641
+      ],
+      "val_accuracies": [
+        0.74627455318342,
+        0.7567042240166875,
+        0.7610815252603467,
+        0.762282517659329,
+        0.7620928872805424
+      ],
+      "early_stopped": true,
+      "best_val_loss": 0.5781724415757177,
+      "stopped_epoch": 5
+    },
+    "test_results": {
+      "accuracy": 0.7591330877819756,
+      "precision": 0.7625391666949894,
+      "recall": 0.7591330877819756,
+      "f1": 0.7565663930234975
+    }
+  },
+  {
+    "timestamp": "2025-12-29 09:43:58",
+    "model_class": "CNN",
+    "model_name": "CNN with Pretrained Embeddings",
+    "model_config": {
+      "total_parameters": 7375603,
+      "trainable_parameters": 7375603,
+      "model_structure": [
+        "Embedding(36576, 200)",
+        "Conv1d(200, 100, kernel_size=(3,), stride=(1,), padding=(1,))",
+        "Dropout(p=0.5, inplace=False)",
+        "Linear(in_features=100, out_features=3, bias=True)"
+      ]
+    },
+    "set_epochs": 10,
+    "actual_epochs": 7,
+    "device": "cuda",
+    "use_pretrained_embeddings": true,
+    "training_history": {
+      "train_losses": [
+        0.6113373034533086,
+        0.517233828045343,
+        0.46766955855624726,
+        0.4277984450015917,
+        0.3929689285877286,
+        0.3638648888672828,
+        0.3382528150030936
+      ],
+      "train_accuracies": [
+        0.7374482335930542,
+        0.7856134255731976,
+        0.8090221693976304,
+        0.8269385101433375,
+        0.8434394227220241,
+        0.8562121381430802,
+        0.8673899572323978
+      ],
+      "val_losses": [
+        0.5948438722455707,
+        0.5772022955549017,
+        0.575677064856697,
+        0.5668204595213351,
+        0.579519666520421,
+        0.588239006419394,
+        0.6166494050646093
+      ],
+      "val_accuracies": [
+        0.7614923910810512,
+        0.7573047202161787,
+        0.7684297024383306,
+        0.762393135380288,
+        0.7583950948942021,
+        0.7606390543765111,
+        0.7518212417629304
+      ],
+      "early_stopped": true,
+      "best_val_loss": 0.5668204595213351,
+      "stopped_epoch": 7
+    },
+    "test_results": {
+      "accuracy": 0.760081569420952,
+      "precision": 0.763528070504781,
+      "recall": 0.760081569420952,
+      "f1": 0.7582832699455572
+    }
+  },
+  {
+    "timestamp": "2025-12-29 09:50:45",
+    "model_class": "LSTM",
+    "model_name": "LSTM with Pretrained Embeddings",
+    "model_config": {
+      "total_parameters": 8311299,
+      "trainable_parameters": 8311299,
+      "model_structure": [
+        "Embedding(36576, 200)",
+        "LSTM(200, 256, num_layers=2, batch_first=True, dropout=0.3)",
+        "Dropout(p=0.5, inplace=False)",
+        "Linear(in_features=256, out_features=3, bias=True)"
+      ]
+    },
+    "set_epochs": 10,
+    "actual_epochs": 5,
+    "device": "cuda",
+    "use_pretrained_embeddings": true,
+    "training_history": {
+      "train_losses": [
+        0.5969034821854238,
+        0.47352168221995017,
+        0.3943150026606886,
+        0.32136141546680086,
+        0.25699215563617
+      ],
+      "train_accuracies": [
+        0.7463437594178459,
+        0.8049418082941382,
+        0.8402530162503344,
+        0.8711723334586224,
+        0.8987291622222899
+      ],
+      "val_losses": [
+        0.5407530055866323,
+        0.5219573082799738,
+        0.5458326551825923,
+        0.5836115732819174,
+        0.677662887300682
+      ],
+      "val_accuracies": [
+        0.7717956416617943,
+        0.781498396043046,
+        0.7801077732652771,
+        0.7715111960936142,
+        0.7700731657211485
+      ],
+      "early_stopped": true,
+      "best_val_loss": 0.5219573082799738,
+      "stopped_epoch": 5
+    },
+    "test_results": {
+      "accuracy": 0.7859276940830554,
+      "precision": 0.7858010368742319,
+      "recall": 0.7859276940830554,
+      "f1": 0.7848137798190189
+    }
+  },
+  {
+    "timestamp": "2025-12-29 10:11:27",
+    "model_class": "Transformer",
+    "model_name": "Transformer with Pretrained Embeddings",
+    "model_config": {
+      "total_parameters": 8050027,
+      "trainable_parameters": 8050027,
+      "model_structure": [
+        "Embedding(36576, 200)",
+        "PositionalEncoding(\n  (dropout): Dropout(p=0.1, inplace=False)\n)",
+        "TransformerEncoder(\n  (layers): ModuleList(\n    (0-1): 2 x TransformerEncoderLayer(\n      (self_attn): MultiheadAttention(\n        (out_proj): NonDynamicallyQuantizableLinear(in_features=200, out_features=200, bias=True)\n      )\n      (linear1): Linear(in_features=200, out_features=512, bias=True)\n      (dropout): Dropout(p=0.1, inplace=False)\n      (linear2): Linear(in_features=512, out_features=200, bias=True)\n      (norm1): LayerNorm((200,), eps=1e-05, elementwise_affine=True)\n      (norm2): LayerNorm((200,), eps=1e-05, elementwise_affine=True)\n      (dropout1): Dropout(p=0.1, inplace=False)\n      (dropout2): Dropout(p=0.1, inplace=False)\n    )\n  )\n)",
+        "Linear(in_features=200, out_features=3, bias=True)"
+      ]
+    },
+    "set_epochs": 10,
+    "actual_epochs": 10,
+    "device": "cuda",
+    "use_pretrained_embeddings": true,
+    "training_history": {
+      "train_losses": [
+        0.819564502341141,
+        0.7010068262510768,
+        0.6628752669432735,
+        0.6395964058646273,
+        0.6222525090899494,
+        0.6084069102237227,
+        0.5972587616204156,
+        0.586269431246465,
+        0.5789600592633345,
+        0.5703593882805659
+      ],
+      "train_accuracies": [
+        0.6150170833375661,
+        0.6929062668251404,
+        0.7131049008353735,
+        0.723940714554191,
+        0.7324129664055913,
+        0.7388027103079065,
+        0.7443188167291419,
+        0.7496723859445952,
+        0.7529095852930918,
+        0.7570034911637326
+      ],
+      "val_losses": [
+        0.6774207071388937,
+        0.6358706226724947,
+        0.621409091627634,
+        0.6184628645995871,
+        0.616240937598012,
+        0.5957983931483224,
+        0.5848193287668624,
+        0.5779847676806431,
+        0.5718764029706934,
+        0.574493161942226
+      ],
+      "val_accuracies": [
+        0.7104976217189994,
+        0.7265687963211707,
+        0.7370142696860037,
+        0.7372987152541837,
+        0.7428612063652598,
+        0.7475703607717956,
+        0.7512207455634393,
+        0.7543022392187229,
+        0.7566094088272941,
+        0.7554242189598773
+      ],
+      "early_stopped": false,
+      "best_val_loss": 0.5718764029706934,
+      "stopped_epoch": 10
+    },
+    "test_results": {
+      "accuracy": 0.7600183373116869,
+      "precision": 0.7620083431641995,
+      "recall": 0.7600183373116869,
+      "f1": 0.760577682819616
+    }
   }
 ]
