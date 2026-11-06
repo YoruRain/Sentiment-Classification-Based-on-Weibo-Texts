@@ -95,7 +95,7 @@ pip install -r requirements.txt
 - **结果展示**：[`print_training_summary`](MyModule.py)
 
 ### 数据处理特色
-- **数据增强**：针对中立情感样本的回译增强
+- **数据增强**：原始数据分层划分后，仅对训练集中的中立情感样本进行回译增强，避免验证集和测试集泄漏
 - **类别平衡**：使用类别权重缓解数据不平衡
 - **分词优化**：基于 LTP 的中文分词处理
 - **词汇管理**：构建 16,000+ 词汇的专用词典
@@ -113,7 +113,7 @@ pip install -r requirements.txt
 
 - **[01Data Wrangling.ipynb](01Data%20Wrangling.ipynb)**：原始数据处理，从JSON格式提取文本和标签
 - **[02Feature Engineering and Data Analysis.ipynb](02Feature%20Engineering%20and%20Data%20Analysis.ipynb)**：特征工程，数据统计分析和可视化
-- **[03Data Augmentation.ipynb](03Data%20Augmentation.ipynb)**：数据增强，使用回译技术平衡数据分布
+- **[03Data Augmentation.ipynb](03Data%20Augmentation.ipynb)**：先分层划分原始数据，再仅对训练集使用回译技术平衡标签分布
 - **[04Segmentation and Tokenization.ipynb](04Segmentation_and%20Tokenization.ipynb)**：中文分词和词汇表构建
 - **[05Implement.ipynb](05Implement.ipynb)**：传统机器学习模型实现和训练
 - **[06Pre-trained Word Embeddings.ipynb](06Pre-trained%20Word%20Embeddings.ipynb)**：基于预训练词向量的深度学习模型
