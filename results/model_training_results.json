@@ -6865,5 +6865,70 @@
       "recall": 0.7600183373116869,
       "f1": 0.760577682819616
     }
+  },
+  {
+    "timestamp": "2026-04-25 12:23:20",
+    "model_class": "BERT",
+    "model_name": "MacBERT",
+    "model_config": {
+      "total_parameters": 102269955,
+      "trainable_parameters": 102269955,
+      "model_structure": [
+        "BertModel(\n  (embeddings): BertEmbeddings(\n    (word_embeddings): Embedding(21128, 768, padding_idx=0)\n    (position_embeddings): Embedding(512, 768)\n    (token_type_embeddings): Embedding(2, 768)\n    (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)\n    (dropout): Dropout(p=0.1, inplace=False)\n  )\n  (encoder): BertEncoder(\n    (layer): ModuleList(\n      (0-11): 12 x BertLayer(\n        (attention): BertAttention(\n          (self): BertSdpaSelfAttention(\n            (query): Linear(in_features=768, out_features=768, bias=True)\n            (key): Linear(in_features=768, out_features=768, bias=True)\n            (value): Linear(in_features=768, out_features=768, bias=True)\n            (dropout): Dropout(p=0.1, inplace=False)\n          )\n          (output): BertSelfOutput(\n            (dense): Linear(in_features=768, out_features=768, bias=True)\n            (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)\n            (dropout): Dropout(p=0.1, inplace=False)\n          )\n        )\n        (intermediate): BertIntermediate(\n          (dense): Linear(in_features=768, out_features=3072, bias=True)\n          (intermediate_act_fn): GELUActivation()\n        )\n        (output): BertOutput(\n          (dense): Linear(in_features=3072, out_features=768, bias=True)\n          (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)\n          (dropout): Dropout(p=0.1, inplace=False)\n        )\n      )\n    )\n  )\n  (pooler): BertPooler(\n    (dense): Linear(in_features=768, out_features=768, bias=True)\n    (activation): Tanh()\n  )\n)",
+        "Dropout(p=0.3, inplace=False)",
+        "Linear(in_features=768, out_features=3, bias=True)"
+      ]
+    },
+    "set_epochs": 10,
+    "actual_epochs": 7,
+    "device": "cuda",
+    "use_pretrained_embeddings": false,
+    "training_history": {
+      "train_losses": [
+        0.6479432938439007,
+        0.4613464021184796,
+        0.4040797213079328,
+        0.3664812229316198,
+        0.3361106009059795,
+        0.3154559253315062,
+        0.2884144898623499
+      ],
+      "train_accuracies": [
+        0.7123633248339919,
+        0.8081485319165507,
+        0.8330167244012366,
+        0.8491857901847845,
+        0.8629811355255539,
+        0.8723947486937765,
+        0.8840466346332924
+      ],
+      "val_losses": [
+        0.47728547212433287,
+        0.4268088915825071,
+        0.4165717724247396,
+        0.41129092268148554,
+        0.4212889673585718,
+        0.4171677020513071,
+        0.4365812657557285
+      ],
+      "val_accuracies": [
+        0.8036377427663912,
+        0.8237385629177795,
+        0.8307548869328867,
+        0.834594902103317,
+        0.8325563755313601,
+        0.8363647856386593,
+        0.836412193233356
+      ],
+      "early_stopped": true,
+      "best_val_loss": 0.41129092268148554,
+      "stopped_epoch": 7
+    },
+    "test_results": {
+      "accuracy": 0.8375883273526297,
+      "precision": 0.8378282238288314,
+      "recall": 0.8375883273526297,
+      "f1": 0.8376807946757502
+    }
   }
 ]
